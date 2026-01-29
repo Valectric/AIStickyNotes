@@ -2,8 +2,7 @@
 
 A tiny utility for leaving AI-readable messages inside your Unity scenes.
 
-Add the component to a GameObject, write a note, and let your AI tools
-understand your world from the inside via Unity MCP custom tools.
+Select a game object, press Ctrl+Alt+S, write a note, and let your AI tool read it to understand your world from the inside via Unity MCP custom tools.
 
 ## Features
 
