@@ -39,7 +39,8 @@ namespace AIStickyNotes.Editor.Internal
         /// Shows the popup dialog for adding a new sticky note.
         /// </summary>
         /// <param name="target">The GameObject to add the note to.</param>
-        public static void Show(GameObject target)
+        /// <returns>The created popup window.</returns>
+        public static AIStickyNotePopup Show(GameObject target)
         {
             var window = CreateInstance<AIStickyNotePopup>();
             window.targetObject = target;
@@ -59,6 +60,18 @@ namespace AIStickyNotes.Editor.Internal
 
             window.ShowModalUtility();
             window.Focus();
+            return window;
+        }
+
+        /// <summary>
+        /// Focuses the window and re-triggers text field focus.
+        /// Call this after the window may have lost focus.
+        /// </summary>
+        public void FocusWithTextField()
+        {
+            Focus();
+            pendingFocusChange = true;
+            Repaint();
         }
 
         /// <summary>
@@ -145,7 +158,7 @@ namespace AIStickyNotes.Editor.Internal
             if (pendingFocusChange && e.type == EventType.Repaint)
             {
                 string targetControl = currentFieldIndex == 0 ? "AIMessageField" : "PriorityField";
-                GUI.FocusControl(targetControl);
+                EditorGUI.FocusTextInControl(targetControl);
                 pendingFocusChange = false;
             }
         }

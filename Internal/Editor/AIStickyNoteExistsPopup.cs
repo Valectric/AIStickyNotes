@@ -65,8 +65,9 @@ namespace AIStickyNotes.Editor.Internal
                 if (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter)
                 {
                     Undo.DestroyObjectImmediate(existingNote);
+                    var newWindow = AIStickyNotePopup.Show(targetObject);
                     Close();
-                    AIStickyNotePopup.Show(targetObject);
+                    EditorApplication.delayCall += () => newWindow?.FocusWithTextField();
                     Event.current.Use();
                     return;
                 }
@@ -99,8 +100,9 @@ namespace AIStickyNotes.Editor.Internal
             if (GUILayout.Button("Replace", GUILayout.Width(100)))
             {
                 Undo.DestroyObjectImmediate(existingNote);
+                var newWindow = AIStickyNotePopup.Show(targetObject);
                 Close();
-                AIStickyNotePopup.Show(targetObject);
+                EditorApplication.delayCall += () => newWindow?.FocusWithTextField();
             }
             GUI.backgroundColor = Color.white;
 
