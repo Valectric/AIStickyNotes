@@ -23,7 +23,7 @@ git submodule update --init --recursive
 ### Dependencies
 
 - Unity 2021.3+ (or Unity 6)
-- [Unity MCP](https://github.com/CoplayDev/unity-mcp) for AI integration
+- [Unity MCP](https://github.com/CoplayDev/unity-mcp) - install as submodule or via Unity Package Manager
 
 ## Usage
 
