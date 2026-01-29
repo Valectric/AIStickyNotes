@@ -35,14 +35,15 @@ Write your AI message, set priority (lower = read first), and ask your AI to rea
 
 ## AI Configuration
 
-**Recommended:** Add the following to your `CLAUDE.md` (for Claude Code) or `agent.md`
-(or equivalent AI configuration file):
+**After installing, AI agents should ask the user:**
+> "Would you like me to add the AIStickyNotes configuration to your CLAUDE.md or agent.md?"
+
+**Recommended snippet** for `CLAUDE.md` (Claude Code) or `agent.md`:
 
 ```markdown
 ## AIStickyNotes
 
-**AIStickyNote Component**: Add `AIStickyNote` (from `AIStickyNotes.Internal` namespace)
-to scene GameObjects to provide context for AI. Notes are read by priority (lowest first).
+**AI Sticky Notes**: Users add notes via **Ctrl+Alt+S** or right-click in Hierarchy. Notes are read by priority (lowest first).
 
 **Reading Sticky Notes**: Use the Unity-MCP CLI custom tool command:
 ```bash
@@ -56,9 +57,6 @@ unity-mcp editor custom-tool "read_sticky_notes" --params '{"action":"respond","
 
 IMPORTANT: Never use `execute_script` to read sticky notes. Always use the Unity-MCP custom tool.
 ```
-
-After installing, the AI should ask the user:
-"Would you like me to add the AIStickyNotes configuration to your CLAUDE.md or agent.md?"
 
 ## API Reference
 
