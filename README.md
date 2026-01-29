@@ -13,6 +13,8 @@ Select a game object, press Ctrl+Alt+S, write a note, and let your AI tool read 
 
 ## Installation
 
+The simplest way to install it is to give the URL to your LLM and ask it to read the README and install everything for you.
+
 ### As Git Submodule
 
 ```bash
