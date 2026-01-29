@@ -1,0 +1,32 @@
+{
+    "name": "AIStickyNotes.Editor",
+    "rootNamespace": "AIStickyNotes.Editor",
+    "references": [
+        "AIStickyNotes",
+        "MCPForUnity.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "MCPFORUNITY_5_OR_NEWER"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.coplaydev.unity-mcp",
+            "expression": "",
+            "define": "MCPFORUNITY_5_OR_NEWER"
+        },
+        {
+            "name": "com.valectric.unity-mcp",
+            "expression": "[5.0,99.0]",
+            "define": "MCPFORUNITY_5_OR_NEWER"
+        }
+    ],
+    "noEngineReferences": false
+}
