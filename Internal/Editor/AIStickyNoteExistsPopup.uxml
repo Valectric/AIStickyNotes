@@ -1,0 +1,24 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:VisualElement name="sticky-note-container" class="sticky-note-container">
+        <!-- Content area -->
+        <ui:VisualElement class="content-area">
+            <!-- Existing message display (read-only) -->
+            <ui:VisualElement class="input-section">
+                <ui:Label text="Existing Message:" class="field-label" />
+                <ui:TextField name="message-field" class="message-field readonly" multiline="true" readonly="true" />
+            </ui:VisualElement>
+
+            <!-- Priority display (read-only) -->
+            <ui:Label name="priority-display" class="priority-display" text="Read Priority: 0 (lower = read first)" />
+        </ui:VisualElement>
+
+        <!-- Footer with shortcut hint and buttons -->
+        <ui:VisualElement class="footer-area">
+            <ui:Label text="Enter = Replace,&#10;Escape = Keep" class="shortcut-hint" />
+            <ui:VisualElement class="button-row">
+                <ui:Button name="keep-button" text="Keep" class="keep-button" />
+                <ui:Button name="replace-button" text="Replace" class="replace-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

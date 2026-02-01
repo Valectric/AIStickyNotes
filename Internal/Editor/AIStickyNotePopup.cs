@@ -1,186 +1,296 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 using AIStickyNotes.Internal;
 
 namespace AIStickyNotes.Editor.Internal
 {
     /// <summary>
-    /// Editor window popup for creating a new AIStickyNote component on a GameObject.
-    /// Provides fields for entering the AI message and read priority.
+    /// UI Toolkit editor window popup for creating a new AIStickyNote component on a GameObject.
+    /// Provides fields for entering the AI message and read priority with a yellow sticky note aesthetic.
     /// </summary>
     public class AIStickyNotePopup : EditorWindow
     {
         /// <summary>
+        /// Current popup instance for test access.
+        /// </summary>
+        private static AIStickyNotePopup _currentInstance;
+
+        /// <summary>
         /// The target GameObject to add the sticky note to.
         /// </summary>
-        private GameObject targetObject;
+        private GameObject _targetObject;
 
         /// <summary>
-        /// The AI message content being entered.
+        /// Whether the GUI has been created (guards against repeated CreateGUI calls).
         /// </summary>
-        private string aiMessage = "";
+        private bool _guiCreated;
 
         /// <summary>
-        /// The read priority value (lower = read first).
+        /// Whether to use modal mode (production) or utility mode (testing).
         /// </summary>
-        private int readPriority = 0;
+        private bool _useModalMode = true;
+
+        // Cached UI elements
+        private TextField _messageField;
+        private IntegerField _priorityField;
+        private Button _cancelButton;
+        private Button _addButton;
+
+        private const float WINDOW_WIDTH = 360f;
+        private const float WINDOW_HEIGHT = 320f;
 
         /// <summary>
-        /// Index of the currently focused field (0 = message, 1 = priority).
-        /// </summary>
-        private int currentFieldIndex = 0;
-
-        /// <summary>
-        /// Flag indicating a focus change is pending (used for Tab navigation).
-        /// </summary>
-        private bool pendingFocusChange = true;
-
-        /// <summary>
-        /// Shows the popup dialog for adding a new sticky note.
+        /// Shows the popup as a modal dialog (production use).
         /// </summary>
         /// <param name="target">The GameObject to add the note to.</param>
         /// <returns>The created popup window.</returns>
         public static AIStickyNotePopup Show(GameObject target)
         {
-            var window = CreateInstance<AIStickyNotePopup>();
-            window.targetObject = target;
-            window.titleContent = new GUIContent("Add AI Sticky Note");
+            return ShowInternal(target, modal: true);
+        }
 
-            const float width = 400f;
-            const float height = 220f;
+        /// <summary>
+        /// Shows the popup as a non-modal utility window (for testing/iteration).
+        /// </summary>
+        /// <param name="target">The GameObject to add the note to.</param>
+        /// <returns>The created popup window.</returns>
+        public static AIStickyNotePopup ShowWithoutDelay(GameObject target)
+        {
+            return ShowInternal(target, modal: false);
+        }
+
+        /// <summary>
+        /// Internal method to show the popup with configurable modal behavior.
+        /// </summary>
+        private static AIStickyNotePopup ShowInternal(GameObject target, bool modal)
+        {
+            // Close existing instance
+            ClosePopup();
+
+            var window = CreateInstance<AIStickyNotePopup>();
+            window._targetObject = target;
+            window._useModalMode = modal;
+            window.titleContent = new GUIContent($"Sticky Note: {target.name}");
+
+            // Center on main window
             var mainWindowPos = EditorGUIUtility.GetMainWindowPosition();
-            var rect = new Rect(0, 0, width, height);
+            var rect = new Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
             rect.center = new Vector2(
                 mainWindowPos.x + mainWindowPos.width / 2f,
                 mainWindowPos.y + mainWindowPos.height / 2f
             );
             window.position = rect;
-            window.minSize = new Vector2(width, height);
-            window.maxSize = new Vector2(width, height);
+            window.minSize = new Vector2(WINDOW_WIDTH, WINDOW_HEIGHT);
+            window.maxSize = new Vector2(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-            window.ShowModalUtility();
+            // Use ShowUtility for non-modal testing, ShowModalUtility for production
+            if (modal)
+            {
+                window.ShowModalUtility();
+            }
+            else
+            {
+                window.ShowUtility();
+            }
+
             window.Focus();
+            _currentInstance = window;
             return window;
         }
 
         /// <summary>
-        /// Focuses the window and re-triggers text field focus.
-        /// Call this after the window may have lost focus.
+        /// Gets the current popup instance for test access.
+        /// </summary>
+        /// <returns>The current popup instance, or null if none is open.</returns>
+        public static AIStickyNotePopup GetCurrentInstance() => _currentInstance;
+
+        /// <summary>
+        /// Closes the currently displayed popup if any.
+        /// </summary>
+        public static void ClosePopup()
+        {
+            if (_currentInstance != null)
+            {
+                try
+                {
+                    _currentInstance.Close();
+                }
+                catch
+                {
+                    // Ignore close errors (window may already be destroyed)
+                }
+                _currentInstance = null;
+            }
+        }
+
+        /// <summary>
+        /// Creates the UI Toolkit GUI for the popup.
+        /// </summary>
+        public void CreateGUI()
+        {
+            // Guard against repeated CreateGUI calls
+            if (_guiCreated)
+                return;
+
+            // Load UXML
+            string basePath = GetAssetBasePath();
+            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+                $"{basePath}/AIStickyNotePopup.uxml"
+            );
+
+            if (visualTree == null)
+            {
+                Debug.LogError("[AIStickyNotes] Failed to load AIStickyNotePopup.uxml");
+                return;
+            }
+
+            visualTree.CloneTree(rootVisualElement);
+
+            // Load USS
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
+                $"{basePath}/AIStickyNotesCommon.uss"
+            );
+            if (styleSheet != null)
+            {
+                rootVisualElement.styleSheets.Add(styleSheet);
+            }
+
+            // Cache UI elements
+            _messageField = rootVisualElement.Q<TextField>("message-field");
+            _priorityField = rootVisualElement.Q<IntegerField>("priority-field");
+            _cancelButton = rootVisualElement.Q<Button>("cancel-button");
+            _addButton = rootVisualElement.Q<Button>("add-button");
+
+            // Set initial values
+            _priorityField.value = 0;
+
+            // Wire up button clicks
+            _cancelButton.clicked += OnCancelClicked;
+            _addButton.clicked += OnAddClicked;
+
+            // Register keyboard shortcuts on root
+            rootVisualElement.focusable = true;
+            rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+
+            // Focus the message field initially
+            _messageField.schedule.Execute(() => _messageField.Focus()).ExecuteLater(50);
+
+            _guiCreated = true;
+        }
+
+        /// <summary>
+        /// Handles keyboard shortcuts for the popup.
+        /// </summary>
+        private void OnKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+            {
+                // Don't trigger add if we're in a multiline text field and shift isn't pressed
+                // Allow Enter to add new lines in the message field
+                if (_messageField.focusController?.focusedElement == _messageField && !evt.shiftKey)
+                {
+                    // Let Enter work normally in the text field
+                    return;
+                }
+                OnAddClicked();
+                evt.StopPropagation();
+                evt.PreventDefault();
+            }
+            else if (evt.keyCode == KeyCode.Escape)
+            {
+                OnCancelClicked();
+                evt.StopPropagation();
+                evt.PreventDefault();
+            }
+            else if (evt.keyCode == KeyCode.Tab)
+            {
+                // Toggle focus between message and priority
+                if (_messageField.focusController?.focusedElement == _messageField)
+                {
+                    _priorityField.Focus();
+                }
+                else
+                {
+                    _messageField.Focus();
+                }
+                evt.StopPropagation();
+                evt.PreventDefault();
+            }
+        }
+
+        /// <summary>
+        /// Handles the Cancel button click.
+        /// </summary>
+        private void OnCancelClicked()
+        {
+            Close();
+        }
+
+        /// <summary>
+        /// Handles the Add Note button click.
+        /// </summary>
+        private void OnAddClicked()
+        {
+            if (_targetObject == null)
+            {
+                Close();
+                return;
+            }
+
+            // Create the sticky note
+            var note = Undo.AddComponent<AIStickyNote>(_targetObject);
+            var so = new SerializedObject(note);
+            so.FindProperty("aiMessage").stringValue = _messageField.value;
+            so.FindProperty("readPriority").intValue = _priorityField.value;
+            so.ApplyModifiedProperties();
+
+            Debug.Log($"[AIStickyNotes] Added AIStickyNote to {_targetObject.name}");
+
+            Selection.activeGameObject = _targetObject;
+            UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(note, true);
+            EditorUtility.SetDirty(_targetObject);
+
+            Close();
+        }
+
+        /// <summary>
+        /// Cleanup when the window is destroyed.
+        /// </summary>
+        private void OnDestroy()
+        {
+            if (_currentInstance == this)
+            {
+                _currentInstance = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the base path to the AIStickyNotes editor assets.
+        /// </summary>
+        private string GetAssetBasePath()
+        {
+            // Find the path to this script's directory
+            var guids = AssetDatabase.FindAssets("AIStickyNotePopup t:Script");
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.Contains("AIStickyNotes"))
+                {
+                    return System.IO.Path.GetDirectoryName(path).Replace("\\", "/");
+                }
+            }
+            return "Assets/AIStickyNotes/Internal/Editor";
+        }
+
+        /// <summary>
+        /// Focuses the window and message field. For use after window may have lost focus.
         /// </summary>
         public void FocusWithTextField()
         {
             Focus();
-            pendingFocusChange = true;
-            Repaint();
-        }
-
-        /// <summary>
-        /// Draws the popup GUI with message input, priority field, and action buttons.
-        /// Keyboard shortcuts: Enter = Add, Escape = Cancel, Tab = Switch field.
-        /// </summary>
-        private void OnGUI()
-        {
-            if (targetObject == null)
-            {
-                Close();
-                return;
-            }
-
-            var e = Event.current;
-
-            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Tab)
-            {
-                currentFieldIndex = (currentFieldIndex + 1) % 2;
-                pendingFocusChange = true;
-                e.Use();
-                return;
-            }
-
-            if (e.type == EventType.KeyDown)
-            {
-                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
-                {
-                    CreateStickyNote();
-                    Close();
-                    e.Use();
-                    return;
-                }
-                else if (e.keyCode == KeyCode.Escape)
-                {
-                    Close();
-                    e.Use();
-                    return;
-                }
-            }
-
-            EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField($"Adding Sticky Note to: {targetObject.name}", EditorStyles.boldLabel);
-            EditorGUILayout.Space(10);
-
-            EditorGUILayout.LabelField("AI Message:");
-            GUI.SetNextControlName("AIMessageField");
-            aiMessage = EditorGUILayout.TextArea(aiMessage, GUILayout.MinHeight(80));
-
-            if (aiMessage.Contains("\t"))
-                aiMessage = aiMessage.Replace("\t", "");
-
-            EditorGUILayout.Space(5);
-
-            EditorGUILayout.BeginHorizontal();
-            GUI.SetNextControlName("PriorityField");
-            readPriority = EditorGUILayout.IntField("Read Priority:", readPriority, GUILayout.Width(200));
-            EditorGUILayout.LabelField("(lower = read first)", EditorStyles.miniLabel);
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(15);
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-
-            if (GUILayout.Button("Cancel", GUILayout.Width(100)))
-            {
-                Close();
-            }
-
-            GUI.backgroundColor = new Color(0.5f, 0.8f, 0.5f);
-            if (GUILayout.Button("Add Note", GUILayout.Width(100)))
-            {
-                CreateStickyNote();
-                Close();
-            }
-            GUI.backgroundColor = Color.white;
-
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(5);
-            EditorGUILayout.LabelField("Enter = Add, Escape = Cancel, Tab = Switch field", EditorStyles.miniLabel);
-
-            if (pendingFocusChange && e.type == EventType.Repaint)
-            {
-                string targetControl = currentFieldIndex == 0 ? "AIMessageField" : "PriorityField";
-                EditorGUI.FocusTextInControl(targetControl);
-                pendingFocusChange = false;
-            }
-        }
-
-        /// <summary>
-        /// Creates the AIStickyNote component on the target GameObject with the entered values.
-        /// Uses Undo system for editor undo support.
-        /// </summary>
-        private void CreateStickyNote()
-        {
-            var note = Undo.AddComponent<AIStickyNote>(targetObject);
-
-            var so = new SerializedObject(note);
-            so.FindProperty("aiMessage").stringValue = aiMessage;
-            so.FindProperty("readPriority").intValue = readPriority;
-            so.ApplyModifiedProperties();
-
-            Debug.Log($"[AIStickyNotes] Added AIStickyNote to {targetObject.name}");
-
-            Selection.activeGameObject = targetObject;
-            UnityEditorInternal.InternalEditorUtility.SetIsInspectorExpanded(note, true);
-            EditorUtility.SetDirty(targetObject);
+            _messageField?.Focus();
         }
     }
 }

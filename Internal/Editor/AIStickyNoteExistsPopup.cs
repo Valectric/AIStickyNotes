@@ -1,120 +1,268 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.UIElements;
 using AIStickyNotes.Internal;
 
 namespace AIStickyNotes.Editor.Internal
 {
     /// <summary>
-    /// Editor window popup displayed when attempting to add a sticky note to a GameObject
+    /// UI Toolkit editor window popup displayed when attempting to add a sticky note to a GameObject
     /// that already has an AIStickyNote component. Offers options to replace or keep the existing note.
     /// </summary>
     public class AIStickyNoteExistsPopup : EditorWindow
     {
         /// <summary>
+        /// Current popup instance for test access.
+        /// </summary>
+        private static AIStickyNoteExistsPopup _currentInstance;
+
+        /// <summary>
         /// The target GameObject that already has a sticky note.
         /// </summary>
-        private GameObject targetObject;
+        private GameObject _targetObject;
 
         /// <summary>
         /// The existing AIStickyNote component on the target.
         /// </summary>
-        private AIStickyNote existingNote;
+        private AIStickyNote _existingNote;
 
         /// <summary>
-        /// Shows the popup dialog for a GameObject with an existing sticky note.
+        /// Whether the GUI has been created (guards against repeated CreateGUI calls).
+        /// </summary>
+        private bool _guiCreated;
+
+        /// <summary>
+        /// Whether to use modal mode (production) or utility mode (testing).
+        /// </summary>
+        private bool _useModalMode = true;
+
+        // Cached UI elements
+        private TextField _messageField;
+        private Label _priorityDisplay;
+        private Button _keepButton;
+        private Button _replaceButton;
+
+        private const float WINDOW_WIDTH = 360f;
+        private const float WINDOW_HEIGHT = 320f;
+
+        /// <summary>
+        /// Shows the popup as a modal dialog (production use).
         /// </summary>
         /// <param name="target">The GameObject with the existing note.</param>
         /// <param name="note">The existing AIStickyNote component.</param>
         public static void Show(GameObject target, AIStickyNote note)
         {
-            var window = CreateInstance<AIStickyNoteExistsPopup>();
-            window.targetObject = target;
-            window.existingNote = note;
-            window.titleContent = new GUIContent("Sticky Note Exists");
+            ShowInternal(target, note, modal: true);
+        }
 
-            const float width = 400f;
-            const float height = 220f;
+        /// <summary>
+        /// Shows the popup as a non-modal utility window (for testing/iteration).
+        /// </summary>
+        /// <param name="target">The GameObject with the existing note.</param>
+        /// <param name="note">The existing AIStickyNote component.</param>
+        /// <returns>The created popup window.</returns>
+        public static AIStickyNoteExistsPopup ShowWithoutDelay(GameObject target, AIStickyNote note)
+        {
+            return ShowInternal(target, note, modal: false);
+        }
+
+        /// <summary>
+        /// Internal method to show the popup with configurable modal behavior.
+        /// </summary>
+        private static AIStickyNoteExistsPopup ShowInternal(GameObject target, AIStickyNote note, bool modal)
+        {
+            // Close existing instance
+            ClosePopup();
+
+            var window = CreateInstance<AIStickyNoteExistsPopup>();
+            window._targetObject = target;
+            window._existingNote = note;
+            window._useModalMode = modal;
+            window.titleContent = new GUIContent($"Sticky Note: {target.name}");
+
+            // Center on main window
             var mainWindowPos = EditorGUIUtility.GetMainWindowPosition();
-            var rect = new Rect(0, 0, width, height);
+            var rect = new Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
             rect.center = new Vector2(
                 mainWindowPos.x + mainWindowPos.width / 2f,
                 mainWindowPos.y + mainWindowPos.height / 2f
             );
             window.position = rect;
-            window.minSize = new Vector2(width, height);
-            window.maxSize = new Vector2(width, height);
+            window.minSize = new Vector2(WINDOW_WIDTH, WINDOW_HEIGHT);
+            window.maxSize = new Vector2(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-            window.ShowModalUtility();
+            // Use ShowUtility for non-modal testing, ShowModalUtility for production
+            if (modal)
+            {
+                window.ShowModalUtility();
+            }
+            else
+            {
+                window.ShowUtility();
+            }
+
             window.Focus();
+            _currentInstance = window;
+            return window;
         }
 
         /// <summary>
-        /// Draws the popup GUI with the existing note content and Replace/Keep buttons.
-        /// Keyboard shortcuts: Enter = Replace, Escape = Keep.
+        /// Gets the current popup instance for test access.
         /// </summary>
-        private void OnGUI()
+        /// <returns>The current popup instance, or null if none is open.</returns>
+        public static AIStickyNoteExistsPopup GetCurrentInstance() => _currentInstance;
+
+        /// <summary>
+        /// Closes the currently displayed popup if any.
+        /// </summary>
+        public static void ClosePopup()
         {
-            if (targetObject == null || existingNote == null)
+            if (_currentInstance != null)
+            {
+                try
+                {
+                    _currentInstance.Close();
+                }
+                catch
+                {
+                    // Ignore close errors (window may already be destroyed)
+                }
+                _currentInstance = null;
+            }
+        }
+
+        /// <summary>
+        /// Creates the UI Toolkit GUI for the popup.
+        /// </summary>
+        public void CreateGUI()
+        {
+            // Guard against repeated CreateGUI calls
+            if (_guiCreated)
+                return;
+
+            // Load UXML
+            string basePath = GetAssetBasePath();
+            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+                $"{basePath}/AIStickyNoteExistsPopup.uxml"
+            );
+
+            if (visualTree == null)
+            {
+                Debug.LogError("[AIStickyNotes] Failed to load AIStickyNoteExistsPopup.uxml");
+                return;
+            }
+
+            visualTree.CloneTree(rootVisualElement);
+
+            // Load USS
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
+                $"{basePath}/AIStickyNotesCommon.uss"
+            );
+            if (styleSheet != null)
+            {
+                rootVisualElement.styleSheets.Add(styleSheet);
+            }
+
+            // Cache UI elements
+            _messageField = rootVisualElement.Q<TextField>("message-field");
+            _priorityDisplay = rootVisualElement.Q<Label>("priority-display");
+            _keepButton = rootVisualElement.Q<Button>("keep-button");
+            _replaceButton = rootVisualElement.Q<Button>("replace-button");
+
+            // Set values from existing note
+            if (_existingNote != null)
+            {
+                _messageField.value = _existingNote.Message ?? "";
+                _priorityDisplay.text = $"Read Priority: {_existingNote.ReadPriority} (lower = read first)";
+            }
+
+            // Wire up button clicks
+            _keepButton.clicked += OnKeepClicked;
+            _replaceButton.clicked += OnReplaceClicked;
+
+            // Register keyboard shortcuts on root
+            rootVisualElement.focusable = true;
+            rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+
+            _guiCreated = true;
+        }
+
+        /// <summary>
+        /// Handles keyboard shortcuts for the popup.
+        /// </summary>
+        private void OnKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
+            {
+                OnReplaceClicked();
+                evt.StopPropagation();
+                evt.PreventDefault();
+            }
+            else if (evt.keyCode == KeyCode.Escape)
+            {
+                OnKeepClicked();
+                evt.StopPropagation();
+                evt.PreventDefault();
+            }
+        }
+
+        /// <summary>
+        /// Handles the Keep button click.
+        /// </summary>
+        private void OnKeepClicked()
+        {
+            Close();
+        }
+
+        /// <summary>
+        /// Handles the Replace button click.
+        /// </summary>
+        private void OnReplaceClicked()
+        {
+            if (_targetObject == null || _existingNote == null)
             {
                 Close();
                 return;
             }
 
-            if (Event.current.type == EventType.KeyDown)
+            // Destroy existing note
+            Undo.DestroyObjectImmediate(_existingNote);
+
+            // Open the create popup
+            var newWindow = AIStickyNotePopup.Show(_targetObject);
+            Close();
+
+            // Focus the new window's text field after a delay
+            EditorApplication.delayCall += () => newWindow?.FocusWithTextField();
+        }
+
+        /// <summary>
+        /// Cleanup when the window is destroyed.
+        /// </summary>
+        private void OnDestroy()
+        {
+            if (_currentInstance == this)
             {
-                if (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter)
+                _currentInstance = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the base path to the AIStickyNotes editor assets.
+        /// </summary>
+        private string GetAssetBasePath()
+        {
+            // Find the path to this script's directory
+            var guids = AssetDatabase.FindAssets("AIStickyNoteExistsPopup t:Script");
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.Contains("AIStickyNotes"))
                 {
-                    Undo.DestroyObjectImmediate(existingNote);
-                    var newWindow = AIStickyNotePopup.Show(targetObject);
-                    Close();
-                    EditorApplication.delayCall += () => newWindow?.FocusWithTextField();
-                    Event.current.Use();
-                    return;
-                }
-                else if (Event.current.keyCode == KeyCode.Escape)
-                {
-                    Close();
-                    Event.current.Use();
-                    return;
+                    return System.IO.Path.GetDirectoryName(path).Replace("\\", "/");
                 }
             }
-
-            EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField($"Sticky Note on: {targetObject.name}", EditorStyles.boldLabel);
-            EditorGUILayout.Space(10);
-
-            EditorGUILayout.LabelField("Existing Message:");
-            EditorGUI.BeginDisabledGroup(true);
-            EditorGUILayout.TextArea(existingNote.Message ?? "", GUILayout.MinHeight(80));
-            EditorGUI.EndDisabledGroup();
-
-            EditorGUILayout.Space(5);
-            EditorGUILayout.LabelField($"Read Priority: {existingNote.ReadPriority} (lower = read first)");
-
-            EditorGUILayout.Space(15);
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-
-            GUI.backgroundColor = new Color(1f, 0.7f, 0.4f);
-            if (GUILayout.Button("Replace", GUILayout.Width(100)))
-            {
-                Undo.DestroyObjectImmediate(existingNote);
-                var newWindow = AIStickyNotePopup.Show(targetObject);
-                Close();
-                EditorApplication.delayCall += () => newWindow?.FocusWithTextField();
-            }
-            GUI.backgroundColor = Color.white;
-
-            if (GUILayout.Button("Keep", GUILayout.Width(100)))
-            {
-                Close();
-            }
-
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(5);
-            EditorGUILayout.LabelField("Enter = Replace, Escape = Keep", EditorStyles.miniLabel);
+            return "Assets/AIStickyNotes/Internal/Editor";
         }
     }
 }

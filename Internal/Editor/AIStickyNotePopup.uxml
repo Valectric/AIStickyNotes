@@ -1,0 +1,27 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <ui:VisualElement name="sticky-note-container" class="sticky-note-container">
+        <!-- Content area -->
+        <ui:VisualElement class="content-area">
+            <!-- Message input section -->
+            <ui:VisualElement class="input-section">
+                <ui:Label text="AI Message:" class="field-label" />
+                <ui:TextField name="message-field" class="message-field" multiline="true" />
+            </ui:VisualElement>
+
+            <!-- Priority input section -->
+            <ui:VisualElement class="priority-row">
+                <uie:IntegerField name="priority-field" label="Read Priority:" class="priority-field" value="0" />
+                <ui:Label text="(lower = read first)" class="priority-hint" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Footer with shortcut hint and buttons -->
+        <ui:VisualElement class="footer-area">
+            <ui:Label text="Enter = Add, Escape = Cancel,&#10;Tab = Switch field" class="shortcut-hint" />
+            <ui:VisualElement class="button-row">
+                <ui:Button name="cancel-button" text="Cancel" class="cancel-button" />
+                <ui:Button name="add-button" text="Add Note" class="add-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
