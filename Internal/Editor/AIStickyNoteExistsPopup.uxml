@@ -14,7 +14,7 @@
 
         <!-- Footer with shortcut hint and buttons -->
         <ui:VisualElement class="footer-area">
-            <ui:Label text="Enter = Replace,&#10;Escape = Keep" class="shortcut-hint" />
+            <ui:Label text="Enter = Replace&#10;Escape = Keep" class="shortcut-hint" />
             <ui:VisualElement class="button-row">
                 <ui:Button name="keep-button" text="Keep" class="keep-button" />
                 <ui:Button name="replace-button" text="Replace" class="replace-button" />

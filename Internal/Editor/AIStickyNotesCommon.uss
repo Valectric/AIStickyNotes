@@ -1,27 +1,24 @@
 /* AIStickyNotes Common Styling - Yellow Sticky Note Aesthetic */
 
-/* Color Variables - Warmer, richer yellow */
+/* Color Variables - Classic sticky note yellow */
 :root {
-    --sticky-bg: #ffe066;
-    --sticky-bg-dark: #ffd633;
-    --sticky-text: #5c4a1f;
-    --sticky-text-muted: #8b7355;
-    --sticky-header-bg: #ffd633;
-    --sticky-border: #e6b800;
-    --sticky-fold: #e6c300;
-    --sticky-fold-dark: #cca300;
+    --sticky-bg: #fff9af;
+    --sticky-text: #333333;
+    --sticky-text-muted: #666666;
+    --sticky-border: #e6d98a;
     --sticky-input-bg: #fffef8;
-    --button-add: #66bb6a;
-    --button-add-hover: #81c784;
-    --button-add-active: #4caf50;
-    --button-cancel: #78909c;
-    --button-cancel-hover: #90a4ae;
-    --button-replace: #ffa726;
-    --button-replace-hover: #ffb74d;
-    --button-replace-active: #ff9800;
+    --sticky-accent: #d4c36a;
+    --button-add: #28a745;
+    --button-add-hover: #34c759;
+    --button-add-active: #218838;
+    --button-cancel: #6c757d;
+    --button-cancel-hover: #7d868f;
+    --button-replace: #f0ad4e;
+    --button-replace-hover: #f5bd6e;
+    --button-replace-active: #ec971f;
 }
 
-/* Main container - clean sticky note look with left accent */
+/* Main container - classic sticky note look */
 .sticky-note-container {
     background-color: var(--sticky-bg);
     padding: 0;
@@ -29,8 +26,7 @@
     flex-direction: column;
     flex-grow: 1;
     border-width: 0;
-    border-left-width: 4px;
-    border-left-color: #d4a020;
+    border-radius: 2px;
 }
 
 
@@ -86,15 +82,18 @@
     background-color: var(--sticky-input-bg);
     border-color: var(--sticky-border);
     border-width: 1px;
-    border-radius: 3px;
+    border-radius: 4px;
+    transition-duration: 0.15s;
+    transition-property: border-color;
 }
 
 .message-field:hover {
     border-color: var(--sticky-text-muted);
 }
 
-.message-field:focus {
-    border-color: var(--sticky-text);
+.message-field:focus-within {
+    border-color: var(--sticky-accent);
+    border-width: 2px;
 }
 
 .message-field > .unity-text-field__input {
@@ -104,6 +103,7 @@
     padding: 8px 10px;
     white-space: normal;
     border-width: 0;
+    flex-grow: 1;
 }
 
 /* Read-only message styling */
@@ -136,9 +136,11 @@
     background-color: var(--sticky-input-bg);
     border-color: var(--sticky-border);
     border-width: 1px;
-    border-radius: 3px;
+    border-radius: 4px;
     color: var(--sticky-text);
     flex-grow: 1;
+    transition-duration: 0.15s;
+    transition-property: border-color;
 }
 
 .priority-field > .unity-integer-field__input:hover {
@@ -146,7 +148,7 @@
 }
 
 .priority-field > .unity-integer-field__input:focus {
-    border-color: var(--sticky-text);
+    border-color: var(--sticky-accent);
 }
 
 .priority-hint {
@@ -171,7 +173,7 @@
     padding: 10px 16px 14px 16px;
     background-color: var(--sticky-bg);
     border-top-width: 1px;
-    border-top-color: rgba(0, 0, 0, 0.05);
+    border-top-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Keyboard shortcut hint - left side */
@@ -192,7 +194,7 @@
     align-items: center;
 }
 
-/* Base button styling */
+/* Base button styling with transitions */
 .button-row > Button {
     min-width: 75px;
     height: 28px;
@@ -201,9 +203,11 @@
     font-size: 11px;
     -unity-font-style: bold;
     border-width: 0;
+    transition-duration: 0.12s;
+    transition-property: background-color, scale;
 }
 
-/* Cancel/Keep buttons (blue-gray) */
+/* Cancel/Keep buttons (gray) */
 .cancel-button, .keep-button {
     background-color: var(--button-cancel);
     color: white;
@@ -211,10 +215,12 @@
 
 .cancel-button:hover, .keep-button:hover {
     background-color: var(--button-cancel-hover);
+    scale: 1.02;
 }
 
 .cancel-button:active, .keep-button:active {
-    background-color: #607d8b;
+    background-color: #5a6268;
+    scale: 0.98;
 }
 
 /* Add button (green - positive action) */
@@ -225,10 +231,12 @@
 
 .add-button:hover {
     background-color: var(--button-add-hover);
+    scale: 1.02;
 }
 
 .add-button:active {
     background-color: var(--button-add-active);
+    scale: 0.98;
 }
 
 /* Replace button (orange - warning/change action) */
@@ -239,8 +247,10 @@
 
 .replace-button:hover {
     background-color: var(--button-replace-hover);
+    scale: 1.02;
 }
 
 .replace-button:active {
     background-color: var(--button-replace-active);
+    scale: 0.98;
 }

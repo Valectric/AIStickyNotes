@@ -5,7 +5,7 @@
             <!-- Message input section -->
             <ui:VisualElement class="input-section">
                 <ui:Label text="AI Message:" class="field-label" />
-                <ui:TextField name="message-field" class="message-field" multiline="true" />
+                <ui:TextField name="message-field" class="message-field" multiline="true" focusable="true" picking-mode="Position" />
             </ui:VisualElement>
 
             <!-- Priority input section -->
@@ -17,7 +17,7 @@
 
         <!-- Footer with shortcut hint and buttons -->
         <ui:VisualElement class="footer-area">
-            <ui:Label text="Enter = Add, Escape = Cancel,&#10;Tab = Switch field" class="shortcut-hint" />
+            <ui:Label text="Enter = Add&#10;Escape = Cancel&#10;Tab = Switch field" class="shortcut-hint" />
             <ui:VisualElement class="button-row">
                 <ui:Button name="cancel-button" text="Cancel" class="cancel-button" />
                 <ui:Button name="add-button" text="Add Note" class="add-button" />
