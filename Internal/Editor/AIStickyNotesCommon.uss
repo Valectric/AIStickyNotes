@@ -2,7 +2,8 @@
 
 /* Color Variables - Classic sticky note yellow */
 :root {
-    --sticky-bg: #fff9af;
+    --sticky-bg: #FFFE91;
+    --sticky-header-bg: #FFFE91;
     --sticky-text: #333333;
     --sticky-text-muted: #666666;
     --sticky-border: #e6d98a;
@@ -21,41 +22,73 @@
 /* Main container - classic sticky note look */
 .sticky-note-container {
     background-color: var(--sticky-bg);
-    padding: 0;
+    padding: 5px;
     margin: 0;
     flex-direction: column;
     flex-grow: 1;
     border-width: 0;
     border-radius: 2px;
+    cursor: move;
 }
 
 
-/* Header styling - yellow bar at top */
+/* Header styling - draggable area at top */
 .sticky-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 12px 0 12px;
+    background-color: var(--sticky-bg);
+    cursor: move;
+}
+
+.header-row {
     flex-direction: row;
     align-items: center;
-    padding: 12px 16px;
-    background-color: var(--sticky-header-bg);
-    border-bottom-width: 1px;
-    border-bottom-color: var(--sticky-border);
+    justify-content: space-between;
 }
 
-.header-label {
-    color: var(--sticky-text);
-    font-size: 12px;
-    -unity-font-style: bold;
-    margin-right: 8px;
+/* Centered separator line */
+.header-separator {
+    height: 2px;
+    width: 70%;
+    background-color: var(--sticky-border);
+    margin-top: 5px;
+    margin-bottom: 0;
+    align-self: center;
 }
 
-.target-name {
+.header-title {
     color: var(--sticky-text);
-    font-size: 12px;
+    font-size: 16px;
     -unity-font-style: bold;
+    flex-grow: 1;
+    margin-bottom: 4px;
+}
+
+.close-button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    background-color: transparent;
+    border-width: 0;
+    font-size: 36px;
+    color: var(--sticky-text);
+    -unity-font-style: bold;
+    padding: 0;
+    margin: -8px -4px 0 0;
+    position: absolute;
+    right: 8px;
+    top: 8px;
+}
+
+.close-button:hover {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
 }
 
 /* Content area - fills available space */
 .content-area {
-    padding: 12px 14px;
+    padding: 6px 14px 12px 14px;
     flex-grow: 1;
     flex-shrink: 0;
 }
@@ -63,8 +96,8 @@
 /* Field labels */
 .field-label {
     color: var(--sticky-text);
-    font-size: 11px;
-    -unity-font-style: normal;
+    font-size: 14px;
+    -unity-font-style: bold;
     margin-bottom: 6px;
 }
 
@@ -75,43 +108,39 @@
     flex-direction: column;
 }
 
-/* Message text area - cream white background, fills available space */
+/* Message text area - transparent background, fills available space */
 .message-field {
     flex-grow: 1;
-    min-height: 120px;
-    background-color: var(--sticky-input-bg);
-    border-color: var(--sticky-border);
-    border-width: 1px;
-    border-radius: 4px;
-    transition-duration: 0.15s;
-    transition-property: border-color;
-}
-
-.message-field:hover {
-    border-color: var(--sticky-text-muted);
-}
-
-.message-field:focus-within {
-    border-color: var(--sticky-accent);
-    border-width: 2px;
+    min-height: 100px;
+    max-height: 180px;
+    background-color: transparent;
+    border-width: 0;
 }
 
 .message-field > .unity-text-field__input {
     background-color: transparent;
     color: var(--sticky-text);
-    font-size: 12px;
-    padding: 8px 10px;
+    font-size: 14px;
+    padding: 8px 0;
     white-space: normal;
     border-width: 0;
     flex-grow: 1;
+    -unity-paragraph-spacing: 12px;
+    overflow: scroll;
+}
+
+/* Placeholder text styling - lighter color to distinguish from actual input */
+.message-field > .unity-text-field__input > .unity-text-element--placeholder {
+    color: #999999;
 }
 
 /* Read-only message styling */
 .message-field.readonly {
-    background-color: #f9f6e8;
+    background-color: transparent;
 }
 
 .message-field.readonly > .unity-text-field__input {
+    background-color: transparent;
     color: var(--sticky-text);
 }
 
@@ -119,28 +148,30 @@
 .priority-row {
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 8px;
 }
 
 .priority-field {
     flex-grow: 1;
+    flex-direction: row;
 }
 
 .priority-field > .unity-label {
     color: var(--sticky-text);
-    font-size: 11px;
-    min-width: 85px;
+    font-size: 14px;
+    -unity-font-style: bold;
+    min-width: auto;
+    margin-right: 8px;
 }
 
 .priority-field > .unity-integer-field__input {
+    flex-grow: 1;
     background-color: var(--sticky-input-bg);
     border-color: var(--sticky-border);
     border-width: 1px;
     border-radius: 4px;
     color: var(--sticky-text);
-    flex-grow: 1;
-    transition-duration: 0.15s;
-    transition-property: border-color;
 }
 
 .priority-field > .unity-integer-field__input:hover {
@@ -152,10 +183,18 @@
 }
 
 .priority-hint {
-    color: var(--sticky-text-muted);
-    font-size: 10px;
-    -unity-font-style: italic;
-    margin-left: 10px;
+    color: var(--sticky-text);
+    font-size: 14px;
+    -unity-font-style: normal;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+/* Priority label (read-only display in exists popup) */
+.priority-label {
+    color: var(--sticky-text);
+    font-size: 14px;
+    -unity-font-style: bold;
 }
 
 /* Priority display (read-only in exists popup) */
@@ -178,13 +217,14 @@
 
 /* Keyboard shortcut hint - left side */
 .shortcut-hint {
-    color: var(--sticky-text-muted);
-    font-size: 10px;
+    color: var(--sticky-text);
+    font-size: 12px;
     -unity-font-style: italic;
     -unity-text-align: middle-left;
     flex-shrink: 1;
     max-width: 140px;
     white-space: normal;
+    -unity-paragraph-spacing: 2px;
 }
 
 /* Button row - right side */

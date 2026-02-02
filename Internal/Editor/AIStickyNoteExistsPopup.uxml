@@ -1,5 +1,14 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
     <ui:VisualElement name="sticky-note-container" class="sticky-note-container">
+        <!-- Custom draggable header -->
+        <ui:VisualElement name="sticky-header" class="sticky-header">
+            <ui:VisualElement class="header-row">
+                <ui:Label name="header-title" class="header-title" text="Sticky Note" />
+                <ui:Button name="close-button" class="close-button" text="×" />
+            </ui:VisualElement>
+            <ui:VisualElement class="header-separator" />
+        </ui:VisualElement>
+
         <!-- Content area -->
         <ui:VisualElement class="content-area">
             <!-- Existing message display (read-only) -->
@@ -9,7 +18,10 @@
             </ui:VisualElement>
 
             <!-- Priority display (read-only) -->
-            <ui:Label name="priority-display" class="priority-display" text="Read Priority: 0 (lower = read first)" />
+            <ui:VisualElement class="priority-row">
+                <ui:Label name="priority-value" text="Read Priority: 0" class="priority-label" />
+                <ui:Label text="(lower = read first)" class="priority-hint" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <!-- Footer with shortcut hint and buttons -->

@@ -31,19 +31,20 @@ namespace AIStickyNotes.Editor.Internal
         /// </summary>
         private bool _guiCreated;
 
-        /// <summary>
-        /// Whether to use modal mode (production) or utility mode (testing).
-        /// </summary>
-        private bool _useModalMode = true;
-
         // Cached UI elements
         private TextField _messageField;
         private Label _priorityDisplay;
         private Button _keepButton;
         private Button _replaceButton;
 
+        // Drag handling
+        private VisualElement _header;
+        private bool _isDragging;
+        private Vector2 _dragStartMousePos;
+        private Vector2 _dragStartWindowPos;
+
         private const float WINDOW_WIDTH = 360f;
-        private const float WINDOW_HEIGHT = 320f;
+        private const float WINDOW_HEIGHT = 360f;
 
         /// <summary>
         /// Shows the popup as a modal dialog (production use).
@@ -77,8 +78,6 @@ namespace AIStickyNotes.Editor.Internal
             var window = CreateInstance<AIStickyNoteExistsPopup>();
             window._targetObject = target;
             window._existingNote = note;
-            window._useModalMode = modal;
-            window.titleContent = new GUIContent($"Sticky Note: {target.name}");
 
             // Center on main window
             var mainWindowPos = EditorGUIUtility.GetMainWindowPosition();
@@ -91,16 +90,8 @@ namespace AIStickyNotes.Editor.Internal
             window.minSize = new Vector2(WINDOW_WIDTH, WINDOW_HEIGHT);
             window.maxSize = new Vector2(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-            // Use ShowUtility for non-modal testing, ShowModalUtility for production
-            if (modal)
-            {
-                window.ShowModalUtility();
-            }
-            else
-            {
-                window.ShowUtility();
-            }
-
+            // Use ShowPopup for borderless window with custom header
+            window.ShowPopup();
             window.Focus();
             _currentInstance = window;
             return window;
@@ -165,15 +156,30 @@ namespace AIStickyNotes.Editor.Internal
 
             // Cache UI elements
             _messageField = rootVisualElement.Q<TextField>("message-field");
-            _priorityDisplay = rootVisualElement.Q<Label>("priority-display");
+            _messageField.verticalScrollerVisibility = ScrollerVisibility.Auto;
+            _priorityDisplay = rootVisualElement.Q<Label>("priority-value");
             _keepButton = rootVisualElement.Q<Button>("keep-button");
             _replaceButton = rootVisualElement.Q<Button>("replace-button");
+
+            // Set up header title
+            _header = rootVisualElement.Q<VisualElement>("sticky-header");
+            var headerTitle = rootVisualElement.Q<Label>("header-title");
+            headerTitle.text = $"Sticky Note: {_targetObject?.name ?? "Unknown"}";
+
+            // Close button in header
+            var closeButton = rootVisualElement.Q<Button>("close-button");
+            closeButton.clicked += Close;
+
+            // Make entire window draggable (except interactive elements)
+            rootVisualElement.RegisterCallback<MouseDownEvent>(OnContainerMouseDown);
+            rootVisualElement.RegisterCallback<MouseMoveEvent>(OnHeaderMouseMove);
+            rootVisualElement.RegisterCallback<MouseUpEvent>(OnHeaderMouseUp);
 
             // Set values from existing note
             if (_existingNote != null)
             {
                 _messageField.value = _existingNote.Message ?? "";
-                _priorityDisplay.text = $"Read Priority: {_existingNote.ReadPriority} (lower = read first)";
+                _priorityDisplay.text = $"Read Priority: {_existingNote.ReadPriority}";
             }
 
             // Wire up button clicks
@@ -183,6 +189,9 @@ namespace AIStickyNotes.Editor.Internal
             // Register keyboard shortcuts on root
             rootVisualElement.focusable = true;
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+
+            // Focus the root element so keyboard shortcuts work immediately
+            rootVisualElement.schedule.Execute(() => rootVisualElement.Focus()).ExecuteLater(50);
 
             _guiCreated = true;
         }
@@ -194,6 +203,7 @@ namespace AIStickyNotes.Editor.Internal
         {
             if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter)
             {
+                // Enter always triggers Replace (message field is read-only)
                 OnReplaceClicked();
                 evt.StopPropagation();
                 evt.PreventDefault();
@@ -234,6 +244,69 @@ namespace AIStickyNotes.Editor.Internal
 
             // Focus the new window's text field after a delay
             EditorApplication.delayCall += () => newWindow?.FocusWithTextField();
+        }
+
+        /// <summary>
+        /// Checks if the target element is interactive (button, text field, etc).
+        /// </summary>
+        private bool IsInteractiveElement(VisualElement element)
+        {
+            while (element != null)
+            {
+                if (element is Button || element is TextField || element is IntegerField ||
+                    element.ClassListContains("unity-text-field__input") ||
+                    element.ClassListContains("unity-base-field__input"))
+                    return true;
+                element = element.parent;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Handles mouse down on the container to start dragging.
+        /// </summary>
+        private void OnContainerMouseDown(MouseDownEvent evt)
+        {
+            if (evt.button != 0) return;
+            if (IsInteractiveElement(evt.target as VisualElement)) return;
+
+            _isDragging = true;
+            _dragStartMousePos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
+            _dragStartWindowPos = position.position;
+            rootVisualElement.CaptureMouse();
+            evt.StopImmediatePropagation();
+        }
+
+        /// <summary>
+        /// Handles mouse move to drag the window.
+        /// </summary>
+        private void OnHeaderMouseMove(MouseMoveEvent evt)
+        {
+            if (!_isDragging || !rootVisualElement.HasMouseCapture()) return;
+
+            Vector2 currentMousePos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
+            Vector2 delta = currentMousePos - _dragStartMousePos;
+            Vector2 newPos = _dragStartWindowPos + delta;
+
+            // Boundary constraints (keep window on screen)
+            var mainWindow = EditorGUIUtility.GetMainWindowPosition();
+            newPos.x = Mathf.Clamp(newPos.x, mainWindow.x, mainWindow.xMax - position.width);
+            newPos.y = Mathf.Clamp(newPos.y, mainWindow.y, mainWindow.yMax - position.height);
+
+            position = new Rect(newPos, position.size);
+        }
+
+        /// <summary>
+        /// Handles mouse up to stop dragging.
+        /// </summary>
+        private void OnHeaderMouseUp(MouseUpEvent evt)
+        {
+            if (!_isDragging) return;
+
+            _isDragging = false;
+            if (rootVisualElement.HasMouseCapture())
+                rootVisualElement.ReleaseMouse();
+            evt.StopImmediatePropagation();
         }
 
         /// <summary>

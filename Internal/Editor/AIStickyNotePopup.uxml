@@ -1,11 +1,20 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
     <ui:VisualElement name="sticky-note-container" class="sticky-note-container">
+        <!-- Custom draggable header -->
+        <ui:VisualElement name="sticky-header" class="sticky-header">
+            <ui:VisualElement class="header-row">
+                <ui:Label name="header-title" class="header-title" text="Sticky Note" />
+                <ui:Button name="close-button" class="close-button" text="×" />
+            </ui:VisualElement>
+            <ui:VisualElement class="header-separator" />
+        </ui:VisualElement>
+
         <!-- Content area -->
         <ui:VisualElement class="content-area">
             <!-- Message input section -->
             <ui:VisualElement class="input-section">
                 <ui:Label text="AI Message:" class="field-label" />
-                <ui:TextField name="message-field" class="message-field" multiline="true" focusable="true" picking-mode="Position" />
+                <ui:TextField name="message-field" class="message-field" multiline="true" focusable="true" picking-mode="Position" text="" placeholder-text="Enter a message for AI assistants..." />
             </ui:VisualElement>
 
             <!-- Priority input section -->
