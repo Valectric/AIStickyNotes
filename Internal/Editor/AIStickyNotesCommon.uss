@@ -75,10 +75,10 @@
     color: var(--sticky-text);
     -unity-font-style: bold;
     padding: 0;
-    margin: -8px -4px 0 0;
+    margin: 0;
     position: absolute;
-    right: 8px;
-    top: 8px;
+    right: -8px;
+    top: -8px;
 }
 
 .close-button:hover {
