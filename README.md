@@ -48,13 +48,15 @@ Write your AI message, set priority (lower = read first), and ask your AI to rea
 
 **Reading Sticky Notes**: Use the Unity-MCP CLI custom tool command:
 ```bash
-unity-mcp editor custom-tool "read_sticky_notes" --params '{}'
+PYTHONIOENCODING=utf-8 unity-mcp --format json editor custom-tool "read_sticky_notes" --params '{}'
 ```
 
 **Responding to Notes**: After completing a task, respond with:
 ```bash
-unity-mcp editor custom-tool "read_sticky_notes" --params '{"action":"respond","path":"GameObject/Path","response_message":"Task completed","completed":true}'
+PYTHONIOENCODING=utf-8 unity-mcp --format json editor custom-tool "read_sticky_notes" --params '{"action":"respond","path":"GameObject/Path","response_message":"Task completed","completed":true}'
 ```
+
+> **Windows note:** `PYTHONIOENCODING=utf-8` prevents emoji UnicodeEncodeError (cp1252 codec). `--format json` gives structured output for parsing.
 
 IMPORTANT: Never use `execute_script` to read sticky notes. Always use the Unity-MCP custom tool.
 ```
